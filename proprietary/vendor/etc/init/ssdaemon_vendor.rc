@@ -1,0 +1,10 @@
+/*
+ * Copyright (c) 2018 ZTE Corporation.
+ * All Rights Reserved.
+ * Confidential and Proprietary - ZTE Corporation.
+ */
+
+service ssdaemon_vendor /vendor/bin/ssdaemon_vendor
+    class late_start
+    user root
+    group system radio audio log

@@ -1,0 +1,60 @@
+on init_charge
+    insmod /vendor/lib/modules/leds-sprd-bltc-rgb.ko
+    mkdir /mnt/vendor 0771 system system
+    mount ext4 /dev/block/platform/soc/soc:ap-ahb/20600000.sdio/by-name/prodnv /mnt/vendor
+    chown system system /mnt/vendor
+    chmod 0771 /mnt/vendor
+
+    #mount cache
+    wait /dev/block/by-name/cache
+    mount ext4 /dev/block/by-name/cache /cache noatime nosuid nodev barrier=1
+
+    #mount persist
+    mkdir /mnt/vendor/persist 0775 system system
+    wait /dev/block/by-name/ztepersist
+    mount ext4 /dev/block/by-name/ztepersist /mnt/vendor/persist noatime nosuid nodev barrier=1
+
+    wait /sys/class/leds/red/brightness
+    wait /sys/class/leds/green/brightness
+    wait /sys/class/leds/blue/brightness
+    chown root system /sys/class/leds/red/brightness
+    chown root system /sys/class/leds/green/brightness
+    chown root system /sys/class/leds/blue/brightness
+    chown root system /cache/charger_tz
+    chmod 0664 /sys/class/leds/red/brightness
+    chmod 0664 /sys/class/leds/green/brightness
+    chmod 0664 /sys/class/leds/blue/brightness
+
+on early-init
+    start ueventd
+
+on charger
+    chmod 0664  /dev/kmsg
+    chown root system  /dev/kmsg
+    restorecon_recursive /mnt/vendor/persist
+    class_start ztecharger
+    class_start brd_charger
+
+service ueventd /sbin/ueventd
+    class core
+    critical
+    seclabel u:r:ueventd:s0
+    shutdown critical
+
+service vendor.charge /vendor/bin/charge
+    class sprdcharger
+    group input system
+    user root
+    oneshot
+
+service ztecharger /ztecharger
+    class ztecharger
+    group root system
+    user root
+    seclabel u:r:ueventd:s0
+
+service brd_charger /vendor/bin/battery_record_daemon charger
+    class brd_charger
+    user root
+    group system root
+    oneshot
